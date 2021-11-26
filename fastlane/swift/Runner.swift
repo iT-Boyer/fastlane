@@ -14,15 +14,15 @@ let logger: Logger = {
     Logger()
 }()
 
-let runner: Runner = {
+public let runner: Runner = {
     Runner()
 }()
 
-func desc(_: String) {
+public func desc(_: String) {
     // no-op, this is handled in fastlane/lane_list.rb
 }
 
-class Runner {
+public class Runner {
     private var thread: Thread!
     private var socketClient: SocketClient!
     private let dispatchGroup = DispatchGroup()
@@ -31,7 +31,7 @@ class Runner {
     private var shouldLeaveDispatchGroupDuringDisconnect = false
     private var executeNext: [String: Bool] = [:]
 
-    func executeCommand(_ command: RubyCommandable) -> String {
+    public func executeCommand(_ command: RubyCommandable) -> String {
         dispatchGroup.enter()
         currentlyExecutingCommand = command
         socketClient.send(rubyCommand: command)
@@ -54,7 +54,7 @@ class Runner {
         }
     }
 
-    static func waitWithPolling<T>(_ expression: @autoclosure @escaping () throws -> T, toEventually predicate: @escaping (T) -> Bool, timeout: Int, pollingInterval: DispatchTimeInterval = .milliseconds(4)) -> DispatchTimeoutResult {
+    public static func waitWithPolling<T>(_ expression: @autoclosure @escaping () throws -> T, toEventually predicate: @escaping (T) -> Bool, timeout: Int, pollingInterval: DispatchTimeInterval = .milliseconds(4)) -> DispatchTimeoutResult {
         func memoizedClosure<T>(_ closure: @escaping () throws -> T) -> (Bool) throws -> T {
             var cache: T?
             return { withoutCaching in
@@ -96,8 +96,8 @@ class Runner {
 }
 
 // Handle threading stuff
-extension Runner {
-    func startSocketThread(port: UInt32) {
+public extension Runner {
+    public func startSocketThread(port: UInt32) {
         let secondsToWait = DispatchTimeInterval.seconds(SocketClient.connectTimeoutSeconds)
 
         dispatchGroup.enter()

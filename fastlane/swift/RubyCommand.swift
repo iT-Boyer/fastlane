@@ -10,11 +10,11 @@
 
 import Foundation
 
-struct RubyCommand: RubyCommandable {
-    var type: CommandType { return .action }
+public struct RubyCommand: RubyCommandable {
+    public var type: CommandType { return .action }
 
-    struct Argument {
-        enum ArgType {
+    public struct Argument {
+        public enum ArgType {
             case stringClosure
 
             var typeString: String {
@@ -29,7 +29,7 @@ struct RubyCommand: RubyCommandable {
         let value: Any?
         let type: ArgType?
 
-        init(name: String, value: Any?, type: ArgType? = nil) {
+        public init(name: String, value: Any?, type: ArgType? = nil) {
             self.name = name
             self.value = value
             self.type = type
@@ -72,11 +72,17 @@ struct RubyCommand: RubyCommandable {
         }
     }
 
+    public init(commandID: String, methodName: String, className:String?, args:[Argument]) {
+        self.commandID = commandID
+        self.methodName = methodName
+        self.className = className
+        self.args = args
+    }
     let commandID: String
     let methodName: String
     let className: String?
     let args: [Argument]
-    let id: String = UUID().uuidString
+    public let id: String = UUID().uuidString
 
     var closure: ((String) -> Void)? {
         let callbacks = args.filter { ($0.type != nil) && $0.type == .stringClosure }
@@ -121,7 +127,7 @@ struct RubyCommand: RubyCommandable {
         completion()
     }
 
-    var commandJson: String {
+    public var commandJson: String {
         let argsArrayJson = args
             .map { $0.json }
             .filter { $0 != "" }
