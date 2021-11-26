@@ -26,7 +26,7 @@ public struct RubyCommand: RubyCommandable {
         }
 
         let name: String
-        let value: Any?
+        public let value: Any?
         let type: ArgType?
 
         public init(name: String, value: Any?, type: ArgType? = nil) {
