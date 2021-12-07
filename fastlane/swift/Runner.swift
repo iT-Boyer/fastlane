@@ -243,7 +243,7 @@ class Logger {
     }
 }
 
-func log(message: String) {
+public func log(message: String) {
     logger.log(message: message)
 }
 
