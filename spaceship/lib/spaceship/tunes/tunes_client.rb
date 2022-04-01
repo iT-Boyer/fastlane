@@ -9,7 +9,6 @@ require_relative 'errors'
 require_relative 'iap_subscription_pricing_tier'
 require_relative 'pricing_tier'
 require_relative 'territory'
-require_relative 'user_detail'
 module Spaceship
   # rubocop:disable Metrics/ClassLength
   class TunesClient < Spaceship::Client
@@ -72,13 +71,13 @@ module Spaceship
         puts("Looking for App Store Connect Team with name #{t_name}") if Spaceship::Globals.verbose?
 
         teams.each do |t|
-          t_id = t['contentProvider']['contentProviderId'].to_s if t['contentProvider']['name'].casecmp(t_name).zero?
+          t_id = t['providerId'].to_s if t['name'].casecmp(t_name).zero?
         end
 
         puts("Could not find team with name '#{t_name}', trying to fallback to default team") if t_id.length.zero?
       end
 
-      t_id = teams.first['contentProvider']['contentProviderId'].to_s if teams.count == 1
+      t_id = teams.first['providerId'].to_s if teams.count == 1
 
       if t_id.length > 0
         puts("Looking for App Store Connect Team with ID #{t_id}") if Spaceship::Globals.verbose?
@@ -92,11 +91,11 @@ module Spaceship
       loop do
         puts("Multiple #{'App Store Connect teams'.yellow} found, please enter the number of the team you want to use: ")
         if ENV["FASTLANE_HIDE_TEAM_INFORMATION"].to_s.length == 0
+          first_team = teams.first
           puts("Note: to automatically choose the team, provide either the App Store Connect Team ID, or the Team Name in your fastlane/Appfile:")
           puts("Alternatively you can pass the team name or team ID using the `FASTLANE_ITC_TEAM_ID` or `FASTLANE_ITC_TEAM_NAME` environment variable")
-          first_team = teams.first["contentProvider"]
           puts("")
-          puts("  itc_team_id \"#{first_team['contentProviderId']}\"")
+          puts("  itc_team_id \"#{first_team['providerId']}\"")
           puts("")
           puts("or")
           puts("")
@@ -106,7 +105,7 @@ module Spaceship
 
         # We're not using highline here, as spaceship doesn't have a dependency to fastlane_core or highline
         teams.each_with_index do |team, i|
-          puts("#{i + 1}) \"#{team['contentProvider']['name']}\" (#{team['contentProvider']['contentProviderId']})")
+          puts("#{i + 1}) \"#{team['name']}\" (#{team['providerId']})")
         end
 
         unless Spaceship::Client::UserInterface.interactive?
@@ -119,7 +118,7 @@ module Spaceship
         team_to_use = teams[selected] if selected >= 0
 
         if team_to_use
-          self.team_id = team_to_use['contentProvider']['contentProviderId'].to_s # actually set the team id here
+          self.team_id = team_to_use['providerId'].to_s # actually set the team id here
           return self.team_id
         end
       end
@@ -950,13 +949,6 @@ module Spaceship
       Spaceship::Tunes::AppVersionRef.factory(data)
     end
 
-    # Fetches the User Detail information from ITC. This gets called often and almost never changes
-    # so we cache it
-    # @return [UserDetail] the response
-    def user_detail_data
-      @_cached_user_detail_data ||= Spaceship::Tunes::UserDetail.factory(user_details_data, self)
-    end
-
     #####################################################
     # @!group CandiateBuilds
     #####################################################
@@ -992,7 +984,7 @@ module Spaceship
         tries -= 1
         if tries > 0
           logger.warn("Received temporary server error from App Store Connect. Retrying the request...")
-          sleep(3) unless Object.const_defined?("SpecHelper")
+          sleep(3) unless Object.const_defined?(:SpecHelper)
           retry
         end
       end
@@ -1560,7 +1552,7 @@ module Spaceship
         msg = "App Store Connect temporary error received: '#{ex.message}'. Retrying after #{seconds_to_sleep} seconds (remaining: #{tries})..."
         puts(msg)
         logger.warn(msg)
-        sleep(seconds_to_sleep) unless Object.const_defined?("SpecHelper")
+        sleep(seconds_to_sleep) unless Object.const_defined?(:SpecHelper)
         retry
       end
       raise ex # re-raise the exception
@@ -1570,7 +1562,7 @@ module Spaceship
         msg = "Potential server error received: '#{ex.message}'. Retrying after 10 seconds (remaining: #{potential_server_error_tries})..."
         puts(msg)
         logger.warn(msg)
-        sleep(seconds_to_sleep) unless Object.const_defined?("SpecHelper")
+        sleep(seconds_to_sleep) unless Object.const_defined?(:SpecHelper)
         retry
       end
       raise ex
@@ -1582,9 +1574,14 @@ module Spaceship
       @sso_token_for_video = nil
     end
 
-    # the contentProviderIr found in the UserDetail instance
+    # the contentProviderId found in the user details data
     def content_provider_id
-      @content_provider_id ||= user_detail_data.content_provider_id
+      return @content_provider_id if @content_provider_id
+
+      provider = user_details_data["provider"]["providerId"]
+      @content_provider_id ||= provider.to_s if provider
+
+      return @content_provider_id
     end
 
     # the ssoTokenForImage found in the AppVersionRef instance
